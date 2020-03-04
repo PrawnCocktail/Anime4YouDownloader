@@ -21,6 +21,12 @@ namespace Anime4YouDownloader
                 Environment.Exit(0);
             }
 
+            string url = args[0];
+            if (url.Contains("epi/"))
+            {
+                url = url.Split(new string[] { "epi/" }, StringSplitOptions.None)[0];
+            }
+
             fetchEpisodes(args[0]);
 
             foreach (var episode in episodes)
@@ -86,7 +92,7 @@ namespace Anime4YouDownloader
                 request.Referer = "https://www.anime4you.one/";
                 request.Method = "POST";
 
-                string body = @"epi=" + episodeNum + "&aid=" + seriesID + "&act=" + episodeNum + "&vkey=1824f6dedd1b031bf277a8317b3cc341401fc31ab78f1966758207c8462f1c2c50b286949d4a6e66&username=";
+                string body = @"epi=" + episodeNum + "&aid=" + seriesID + "&act=" + episodeNum + "&vkey=&username=";
                 byte[] postBytes = Encoding.UTF8.GetBytes(body);
                 request.ContentLength = postBytes.Length;
                 Stream stream = request.GetRequestStream();
