@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Anime4YouDownloader
@@ -13,6 +14,8 @@ namespace Anime4YouDownloader
     {
         static List<Episode> episodes = new List<Episode>();
         static ProgressBar progress;
+        static int count = 0;
+
         static void Main(string[] args)
         {
             if (args.Length == 0)
@@ -28,7 +31,7 @@ namespace Anime4YouDownloader
             }
 
             fetchEpisodes(args[0]);
-
+            
             foreach (var episode in episodes)
             {
                 string streamUrl = videoFetch(episode.vivourl);
@@ -36,7 +39,7 @@ namespace Anime4YouDownloader
                 Directory.CreateDirectory(dirName);
                 progress = new ProgressBar();
 
-                string filename = episode.showName + " - " + "Episode " + episode.episodeNumber + ".mp4";
+                string filename = MakeValidFileName(episode.showName + " - " + "Episode " + episode.episodeNumber + ".mp4");
                 Console.WriteLine("Downloading; " + filename + " ");
 
                 Task.Run(async () =>
@@ -45,7 +48,7 @@ namespace Anime4YouDownloader
                     {
                         client.DownloadProgressChanged += wc_DownloadProgressChanged;
 
-                        await client.DownloadFileTaskAsync(new Uri(streamUrl), dirName + "\\" + filename);
+                        await client.DownloadFileTaskAsync(new Uri(streamUrl), Path.Combine(dirName, filename));
                     }
                 }).GetAwaiter().GetResult();
                 Console.WriteLine();
@@ -65,11 +68,19 @@ namespace Anime4YouDownloader
 
             foreach (HtmlNode node in episodelistnodes)
             {
+                if (count > 20)
+                {
+                    Console.WriteLine("Server is freaking out, waiting for 10 seconds.");
+                    Thread.Sleep(10000);
+                    count = 0;
+                }
+
                 Uri episode = new Uri(baseUrl + node.Attributes[1].Value);
                 int episodenum = Convert.ToInt32(episode.Segments[6].Replace("/", ""));
                 int seriesnum = Convert.ToInt32(episode.Segments[4].Replace("/", ""));
 
                 Episode episodeInfo = fetchStreamInfo(titlenode.InnerText, episodenum, seriesnum, baseUrl + node.Attributes[1].Value);
+                count++;
                 episodes.Add(episodeInfo);
 
             }
@@ -123,6 +134,7 @@ namespace Anime4YouDownloader
             }
             catch (WebException e)
             {
+
                 throw;
             }
         }
@@ -166,10 +178,10 @@ namespace Anime4YouDownloader
 
         private static string MakeValidFileName(string name)
         {
-            string invalidChars = System.Text.RegularExpressions.Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
+            string invalidChars = System.Text.RegularExpressions.Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
 
-            return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "_");
+            return System.Text.RegularExpressions.Regex.Replace(name, invalidRegStr, "");
         }
         
         static void wc_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
