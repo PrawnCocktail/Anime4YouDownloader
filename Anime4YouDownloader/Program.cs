@@ -30,7 +30,7 @@ namespace Anime4YouDownloader
                 url = url.Split(new string[] { "epi/" }, StringSplitOptions.None)[0];
             }
 
-            fetchEpisodes(args[0]);
+            fetchEpisodes(url);
             
             foreach (var episode in episodes)
             {
