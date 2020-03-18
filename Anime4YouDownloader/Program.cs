@@ -5,14 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Anime4YouDownloader
 {
     class Program
     {
-        static List<Episode> episodes = new List<Episode>();
+        static List<BasicEpisode> episodes = new List<BasicEpisode>();
         static ProgressBar progress;
         static int count = 0;
 
@@ -34,7 +33,8 @@ namespace Anime4YouDownloader
             
             foreach (var episode in episodes)
             {
-                string streamUrl = videoFetch(episode.vivourl);
+                string vivoUrl = fetchStreamInfo(episode.episodeNumber, episode.seriesID);
+                string streamUrl = videoFetch(vivoUrl);
                 string dirName = MakeValidFileName(episode.showName);
                 Directory.CreateDirectory(dirName);
                 progress = new ProgressBar();
@@ -68,27 +68,24 @@ namespace Anime4YouDownloader
 
             foreach (HtmlNode node in episodelistnodes)
             {
-                if (count > 20)
-                {
-                    Console.WriteLine("Server is freaking out, waiting for 10 seconds.");
-                    Thread.Sleep(10000);
-                    count = 0;
-                }
-
                 Uri episode = new Uri(baseUrl + node.Attributes[1].Value);
                 int episodenum = Convert.ToInt32(episode.Segments[6].Replace("/", ""));
                 int seriesnum = Convert.ToInt32(episode.Segments[4].Replace("/", ""));
 
-                Episode episodeInfo = fetchStreamInfo(titlenode.InnerText, episodenum, seriesnum, baseUrl + node.Attributes[1].Value);
-                count++;
-                episodes.Add(episodeInfo);
+                BasicEpisode BEpisode = new BasicEpisode
+                {
+                    showName = titlenode.InnerText,
+                    episodeNumber = episodenum,
+                    seriesID = seriesnum,
+                    url = baseUrl + node.Attributes[1].Value
+                };
 
+                episodes.Add(BEpisode);
             }
             Console.WriteLine("Found " + episodes.Count + " episodes of " + titlenode.InnerText);
-
         }
 
-        static Episode fetchStreamInfo(string showName, int episodeNum, int seriesID, string url)
+        static string fetchStreamInfo(int episodeNum, int seriesID)
         {
             try
             {
@@ -118,23 +115,11 @@ namespace Anime4YouDownloader
                 var doc = new HtmlDocument();
                 doc.LoadHtml(data);
                 HtmlNodeCollection nodeCollection = doc.DocumentNode.SelectNodes("//ul[@class='streamer']//li//button");
-
-                string vivoUrl = nodeCollection[0].Attributes[0].Value;
-
-                Episode episode = new Episode
-                {
-                    showName = showName,
-                    episodeNumber = episodeNum,
-                    seriesID = seriesID,
-                    a4yurl = url,
-                    vivourl = vivoUrl,
-                };
-
-                return episode;
+                
+                return nodeCollection[0].Attributes[0].Value;
             }
             catch (WebException e)
             {
-
                 throw;
             }
         }

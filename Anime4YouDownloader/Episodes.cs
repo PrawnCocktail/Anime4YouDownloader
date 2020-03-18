@@ -6,15 +6,11 @@ using System.Threading.Tasks;
 
 namespace Anime4YouDownloader
 {
-    class Episode
+    class BasicEpisode
     {
         public string showName { get; set; }
         public int episodeNumber { get; set; }
         public int seriesID { get; set; }
-        public string a4yurl { get; set; }
-        public string vivourl { get; set; }
-       // public string streamUrl { get; set; }
-
-        //public string username { get; set; }
+        public string url { get; set; }
     }
 }
